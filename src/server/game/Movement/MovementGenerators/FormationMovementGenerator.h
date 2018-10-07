@@ -26,7 +26,7 @@ class Creature;
 class FormationMovementGenerator : public MovementGeneratorMedium<Creature, FormationMovementGenerator>
 {
     public:
-        explicit FormationMovementGenerator(uint32 id, ObjectGuid leaderGUID, FormationMoveSegment moveSegment);
+        explicit FormationMovementGenerator(uint32 id, Creature* leader, FormationMoveSegment moveSegment);
 
         MovementGeneratorType GetMovementGeneratorType() const override;
 
@@ -53,8 +53,13 @@ class FormationMovementGenerator : public MovementGeneratorMedium<Creature, Form
         FormationMoveSegment _moveSegment;
         ObjectGuid _leaderGUID;
         bool _movingToStart;
+        bool _skippedStart;
 
         Position _previousHome;
+        uint32 _createTime;
+
+        Position _startPos;
+        Position _destPos;
 };
 
 #endif // TRINITY_FORMATIONMOVEMENTGENERATOR_H

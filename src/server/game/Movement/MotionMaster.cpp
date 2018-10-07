@@ -890,7 +890,7 @@ void MotionMaster::MoveFormation(uint32 id, FormationMoveSegment path, Creature*
     if (_owner->GetTypeId() != TYPEID_UNIT)
         return;
 
-    Add(new FormationMovementGenerator(id, leader->GetGUID(), path));
+    Add(new FormationMovementGenerator(id, leader, path));
 }
 
 void MotionMaster::LaunchMoveSpline(Movement::MoveSplineInit&& init, uint32 id/*= 0*/, MovementGeneratorPriority priority/* = MOTION_PRIORITY_NORMAL*/, MovementGeneratorType type/*= EFFECT_MOTION_TYPE*/)

@@ -1264,7 +1264,7 @@ void ObjectMgr::LoadCreatures()
         data.scriptId        = GetScriptId(fields[15].GetString());
         int32 gameEvent      = fields[16].GetInt32();
         data.poolId          = fields[17].GetUInt32(); //Old WR pool system
-        //sun: use legacy group by default for instances, else it would break a lot of existing scripts. This will be overriden by any entry in spawn_group table.
+        //sun: use legacy group by default for instances and battlegrounds, else it would break a lot of existing scripts. This will be overriden by any entry in spawn_group table.
         if(mapEntry->Instanceable())
             data.spawnGroupData = &_spawnGroupDataStore[1]; //Legacy group
         else
