@@ -69,15 +69,15 @@ namespace Movement
             real_position = move_spline.ComputePosition();
         else
         {
-            Position const* pos;
+            Position pos;
             if (!transport)
-                pos = unit;
+                pos = unit->GetPosition();
             else
-                pos = &unit->m_movementInfo.transport.pos;
+                pos = unit->GetMovementInfo().transport.pos;
 
-            real_position.x = pos->GetPositionX();
-            real_position.y = pos->GetPositionY();
-            real_position.z = pos->GetPositionZ();
+            real_position.x = pos.GetPositionX();
+            real_position.y = pos.GetPositionY();
+            real_position.z = pos.GetPositionZ();
             real_position.orientation = unit->GetOrientation();
         }
 
@@ -91,7 +91,7 @@ namespace Movement
         args.flags.enter_cycle = args.flags.cyclic;
         move_spline.onTransport = transport;
 
-        uint32 moveFlags = unit->m_movementInfo.GetMovementFlags();
+        uint32 moveFlags = unit->GetMovementInfo().GetMovementFlags();
         moveFlags |= MOVEMENTFLAG_SPLINE_ENABLED;
         
 #ifdef LICH_KING
@@ -130,11 +130,11 @@ namespace Movement
         if (!args.Validate(unit))
         {
             //sun: make sure this flag is correctly removed if it's already there when entering this function.
-            unit->m_movementInfo.RemoveMovementFlag(MOVEMENTFLAG_SPLINE_ENABLED);
+            unit->RemoveUnitMovementFlag(MOVEMENTFLAG_SPLINE_ENABLED);
             return 0;
         }
 
-        unit->m_movementInfo.SetMovementFlags(moveFlags);
+        unit->SetUnitMovementFlags(moveFlags);
         move_spline.Initialize(args);
         ASSERT(!args.flags.done); //sun: should never be true at this point. MOVEMENTFLAG_SPLINE_ENABLED is not enabled on a stop spline.
 
@@ -157,20 +157,20 @@ namespace Movement
             loc = move_spline.ComputePosition();
         else
         {
-            Position const* pos;
+            Position pos;
             if (!transport)
-                pos = unit;
+                pos = unit->GetPosition();
             else
-                pos = &unit->m_movementInfo.transport.pos;
+                pos = unit->GetMovementInfo().transport.pos;
 
-            loc.x = pos->GetPositionX();
-            loc.y = pos->GetPositionY();
-            loc.z = pos->GetPositionZ();
+            loc.x = pos.GetPositionX();
+            loc.y = pos.GetPositionY();
+            loc.z = pos.GetPositionZ();
             loc.orientation = unit->GetOrientation();
         }
 
         args.flags = MoveSplineFlag::Done;
-        unit->m_movementInfo.RemoveMovementFlag(MOVEMENTFLAG_FORWARD | MOVEMENTFLAG_SPLINE_ENABLED);
+        unit->RemoveUnitMovementFlag(MOVEMENTFLAG_FORWARD | MOVEMENTFLAG_SPLINE_ENABLED);
         move_spline.onTransport = transport;
         move_spline.Initialize(args);
 
@@ -204,7 +204,7 @@ namespace Movement
 #endif
         args.walk = unit->HasUnitMovementFlag(MOVEMENTFLAG_WALKING);
 
-        args.flags.flying = unit->m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_DISABLE_GRAVITY);
+        args.flags.flying = unit->HasUnitMovementFlag(MOVEMENTFLAG_CAN_FLY) || unit->HasUnitMovementFlag(MOVEMENTFLAG_DISABLE_GRAVITY);
     }
 
     void MoveSplineInit::SetFacing(const Unit* target)

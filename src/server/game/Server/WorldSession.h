@@ -226,9 +226,6 @@ class TC_GAME_API WorldSession
         WorldSession(uint32 id, ClientBuild clientBuild, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
         ~WorldSession();
 
-        void ReadMovementInfo(WorldPacket& data, MovementInfo* mi);
-        void WriteMovementInfo(WorldPacket* data, MovementInfo* mi);
-
         bool PlayerLoading() const { return m_playerLoading; }
         bool PlayerLogout() const { return m_playerLogout; }
         bool PlayerLogoutWithSave() const { return m_playerLogout && m_playerSave; }
@@ -432,6 +429,8 @@ class TC_GAME_API WorldSession
         uint32 GetLatency() const { return m_latency; }
         void SetLatency(uint32 latency) { m_latency = latency; }
         void ResetClientTimeDelay() { m_clientTimeDelay = 0; }
+        void SetClientTimeDelay(uint32 delay) { m_clientTimeDelay = delay; }
+        uint32 GetClientTimeDelay() const { return m_clientTimeDelay; }
 
         bool IsReplaying() const { return m_replayPlayer != nullptr; }
         bool IsRecording() const { return m_replayRecorder != nullptr; }
@@ -475,8 +474,8 @@ class TC_GAME_API WorldSession
         void HandlePlayedTime(WorldPacket& recvPacket);
 
         // new
-        void HandleMoveUnRootAck(WorldPacket& recvPacket);
-        void HandleMoveRootAck(WorldPacket& recvPacket);
+        void HandleMovementFlagChangeAck(WorldPacket& recvPacket);
+        void HandleMovementFlagChangeToggleAck(WorldPacket& recvPacket);
         void HandleLookingForGroup(WorldPacket& recvPacket);
 
         // new inspect
@@ -484,11 +483,6 @@ class TC_GAME_API WorldSession
 
         // new party stats
         void HandleInspectHonorStatsOpcode(WorldPacket& recvPacket);
-
-        void HandleMoveWaterWalkAck(WorldPacket& recvPacket);
-        void HandleFeatherFallAck(WorldPacket &recvData);
-
-        void HandleMoveHoverAck( WorldPacket & recvData );
 
         void HandleMountSpecialAnimOpcode(WorldPacket &recvdata);
 
@@ -504,9 +498,10 @@ class TC_GAME_API WorldSession
 
         void HandleMoveTeleportAck(WorldPacket& recvPacket);
         void HandleForceSpeedChangeAck( WorldPacket & recvData );
+#ifdef LICH_KING
+        void HandleCollisionHeightChangeAck(WorldPacket& recvData);
+#endif
 
-        void HandlePingOpcode(WorldPacket& recvPacket);
-        void HandleAuthSessionOpcode(WorldPacket& recvPacket);
         void HandleRepopRequestOpcode(WorldPacket& recvPacket);
         void HandleAutostoreLootItemOpcode(WorldPacket& recvPacket);
         void HandleLootMoneyOpcode(WorldPacket& recvPacket);
@@ -701,7 +696,6 @@ class TC_GAME_API WorldSession
         void HandleQueryNextMailTime(WorldPacket & recvData);
         void HandleCancelChanneling(WorldPacket & recvData);
 
-        void SendItemPageInfo(ItemTemplate *itemProto);
         void HandleSplitItemOpcode(WorldPacket& recvPacket);
         void HandleSwapInvItemOpcode(WorldPacket& recvPacket);
         void HandleDestroyItemOpcode(WorldPacket& recvPacket);
@@ -843,7 +837,6 @@ class TC_GAME_API WorldSession
         void HandleFarSightOpcode(WorldPacket& recvData);
         void HandleSetLfgOpcode(WorldPacket& recvData);
         void HandleSetDungeonDifficultyOpcode(WorldPacket& recvData);
-        void HandleMoveSetCanFlyAckOpcode(WorldPacket& recvData);
         void HandleLfgAutoJoinOpcode(WorldPacket& recvData);
         void HandleLfgCancelAutoJoinOpcode(WorldPacket& recvData);
         void HandleLfmAutoAddMembersOpcode(WorldPacket& recvData);
