@@ -495,16 +495,17 @@ void WorldSession::HandleSetSelectionOpcode( WorldPacket & recvData )
     }
 }
 
-void WorldSession::HandleStandStateChangeOpcode( WorldPacket & recvData )
+void WorldSession::HandleStandStateChangeOpcode(WorldPacket & recvData)
 {
-    if(!_player->m_unitMovedByMe->IsAlive())
+    //sun: affect moved unit and not player
+    if(!_activeMover || !_activeMover->IsAlive())
         return;
 
     uint8 animstate;
     recvData >> animstate;
 
-    if (_player->m_unitMovedByMe->GetStandState() != animstate)
-        _player->m_unitMovedByMe->SetStandState(animstate);
+    if (_activeMover->GetStandState() != animstate)
+        _activeMover->SetStandState(animstate);
 }
 
 void WorldSession::HandleBugOpcode( WorldPacket & recvData )
@@ -1214,6 +1215,7 @@ void WorldSession::HandleRealmSplitOpcode( WorldPacket & recvData )
 void WorldSession::HandleFarSightOpcode( WorldPacket & recvData )
 {
     //TC_LOG_DEBUG("network", "WORLD: CMSG_FAR_SIGHT");
+    //TODO: needs some cheating protection here...
 
     bool apply;
     recvData >> apply;
@@ -1254,26 +1256,40 @@ void WorldSession::HandleSetTitleOpcode( WorldPacket & recvData )
     GetPlayer()->SetUInt32Value(PLAYER_CHOSEN_TITLE, title);
 }
 
-void WorldSession::HandleTimeSyncResp( WorldPacket & recvData )
+// CMSG_TIME_SYNC_RESP
+void WorldSession::HandleTimeSyncResp(WorldPacket & recvData)
 {
-    uint32 counter, clientTicks;
-    recvData >> counter >> clientTicks;
+    uint32 counter, clientTimestamp;
+    recvData >> counter >> clientTimestamp;
 
     // time_ seems always more than GetMSTime()
     // uint32 diff = GetMSTimeDiff(GetMSTime(),time_);
 
-    if (counter != _player->m_timeSyncCounter - 1)
+    if (counter != m_timeSyncCounter - 1)
+    {
         TC_LOG_DEBUG("network", "Wrong time sync counter from player %s (cheater?)", _player->GetName().c_str());
+        //Send a new one?
+        return;
+    }
 
-#ifdef TRINITY_DEBUG
-    TC_LOG_TRACE("network", "Time sync received: counter %u, client ticks %u, time since last sync %u", counter, clientTicks, clientTicks - _player->m_timeSyncClient);
-    uint32 ourTicks = clientTicks + (WorldGameTime::GetGameTimeMS() - _player->m_timeSyncServer);
-
-    // diff should be small
-    TC_LOG_TRACE("network", "Our ticks: %u, diff %u, latency %u", ourTicks, ourTicks - clientTicks, GetLatency());
-#endif
-
-    _player->m_timeSyncClient = clientTicks;
+    //Implement part of http://www.mine-control.com/zack/timesync/timesync.html
+    //May be improved by implementing the rest, not so complicated :) We're currently too sensible to TCP retransmissions
+    // time it took for the request to travel to the client, for the client to process it and reply and for response to travel back to the server.
+    uint32 roundTripDuration = GetMSTimeDiff(m_timeSyncServer, GetMSTime());
+    // We want to estimate delay between our request and the client response. The client timestamp is the time he actually received it
+    // we assume that the request processing time is 0
+    uint32 lagDelay = roundTripDuration / 2;
+    /*
+    clockDelta = serverTime - clientTime
+    where
+    serverTime: time that was displayed on the clock of the SERVER at the moment when the client processed the SMSG_TIME_SYNC_REQUEST packet.
+    clientTime: time that was displayed on the clock of the CLIENT at the moment when the client processed the SMSG_TIME_SYNC_REQUEST packet.
+    Once clockDelta has been computed, we can compute the time on server clock of an event when we know the time of the event on the client clock,
+    using this relation:
+    serverTime = clockDelta + clientTime
+    Or in english: delta is the time we need to add to client time to get the server time
+    */
+    m_timeSyncClockDelta = (int64)(m_timeSyncServer + lagDelay) - (int64)clientTimestamp;
 }
 
 void WorldSession::HandleResetInstancesOpcode( WorldPacket & /*recvData*/ )
@@ -1362,31 +1378,6 @@ void WorldSession::HandleCancelMountAuraOpcode( WorldPacket & /*recvData*/ )
     _player->Dismount();
     _player->RemoveAurasByType(SPELL_AURA_MOUNTED);
 }
-
-/*
-void WorldSession::HandleMoveSetCanFlyAckOpcode( WorldPacket & recvData )
-{
-    ObjectGuid guid;                                       // guid - unused
-    recvData >> guid;
-
-    recvData.read_skip<uint32>();                          // unk
-
-#ifdef LICH_KING
-    MovementInfo movementInfo;
-    movementInfo.guid = guid;
-    ReadMovementInfo(recvData, &movementInfo);
-
-    recvData.read_skip<float>();                           // unk2
-
-    _player->m_unitMovedByMe->m_movementInfo.flags = movementInfo.GetMovementFlags();
-#else
-    uint32 flags;
-    recvData >> flags;
-
-    _player->m_unitMovedByMe->m_movementInfo.flags = flags;
-#endif
-}
-*/
 
 void WorldSession::HandleRequestPetInfoOpcode( WorldPacket & /*recvData */)
 {
