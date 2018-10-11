@@ -686,9 +686,12 @@ void WorldSession::SetActiveMoverReal(Unit* activeMover)
 // those changes must be acked by client. Also, same problem is present with speed changes.
 void WorldSession::SetActiveMover(Unit* activeMover)
 {
-    //Also finish those of target player 
-    if (Player* playerMover = activeMover->ToPlayer())
-        playerMover->GetSession()->ResolveAllPendingChanges();
+    //Resolve all pending changes for this unit before taking control
+    if (WorldSession* session = activeMover->GetPlayerMovingMe())
+    {
+        session->ResolveAllPendingChanges();
+        session->_activeMover = nullptr;
+    }
 
     _activeMover = activeMover;
     _activeMover->m_playerMovingMe = this;
@@ -732,9 +735,6 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recvData)
     {
         TC_LOG_TRACE("movement", "%s: Player %s, setting unit %s as active mover",
             GetOpcodeNameForLogging(static_cast<OpcodeClient>(recvData.GetOpcode())).c_str(), _player->GetName().c_str(), mover->GetName().c_str());
-
-        //Force finish all unresolved acks on previous mover when acquiring mover
-        ResolveAllPendingChanges();
     }
 
     SetActiveMover(mover);
