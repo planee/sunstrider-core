@@ -3361,24 +3361,6 @@ bool Creature::IsFocusing(Spell const* focusSpell, bool withDelay)
     return true;
 }
 
-/*bool Creature::SetDisableGravity(bool disable, bool packetOnly)
-{
-    //! It's possible only a packet is sent but moveflags are not updated
-    //! Need more research on this
-    if (!packetOnly && !Unit::SetDisableGravity(disable))
-        return false;
-
-#ifdef LICH_KING
-     if (!movespline->Initialized())
-        return true;
-
-    WorldPacket data(disable ? SMSG_SPLINE_MOVE_GRAVITY_DISABLE : SMSG_SPLINE_MOVE_GRAVITY_ENABLE, 9);
-    data << GetPackGUID();
-    SendMessageToSet(&data, false);
-#endif
-    return true;
-}*/
-
 uint32 Creature::GetPetAutoSpellOnPos(uint8 pos) const
 {
     if (pos >= MAX_SPELL_CHARM || m_charmInfo->GetCharmSpell(pos)->GetType() != ACT_ENABLED)
