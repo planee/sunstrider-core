@@ -308,7 +308,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     recvData.rfinish();                         // prevent warnings spam
     if (!_activeMover)
     {
-        TC_LOG_ERROR("movement", "Player sent a move packet (%u) but is not currently moving any unit", recvData.GetOpcode());
+        TC_LOG_DEBUG("movement", "Player sent a move packet (%u) but is not currently moving any unit", recvData.GetOpcode());
         return;
     }
     if (!IsAuthorizedToMove(_activeMover->GetGUID(), true))
@@ -755,6 +755,7 @@ void WorldSession::HandleMoveNotActiveMover(WorldPacket &recvData)
     MovementInfo movementInfo;
     movementInfo.FillContentFromPacket(&recvData, true);
 
+    _releaseMoverTimeout = 0;
     if (!_activeMover)
     {
         TC_LOG_ERROR("movement", "WorldSession::HandleMoveNotActiveMover: The client doesn't control any unit right now");
@@ -825,6 +826,8 @@ void WorldSession::SetClientControl(Unit* target, bool allowMove)
     else
     {
         _allowedClientControl.erase(target->GetGUID());
+        if(target == _activeMover)
+            _releaseMoverTimeout = WorldGameTime::GetGameTimeMS() + sWorld->getIntConfig(CONFIG_PENDING_MOVE_CHANGES_TIMEOUT);
         //from this point, client not allowed to take the unit anymore using CMSG_SET_ACTIVE_MOVER, but may still be able to move/ack it until another player actives the unit as mover
     }
 }
@@ -1306,7 +1309,7 @@ bool WorldSession::IsAuthorizedToMove(ObjectGuid guid, bool log /*= true*/)
 {
     bool authorized = _allowedClientMove.count(guid) > 0;
     if(!authorized && log)
-        TC_LOG_ERROR("movement", "player %s (%u) tried to move with non allowed unit %s", 
+        TC_LOG_DEBUG("movement", "player %s (%u) tried to move with non allowed unit %s",
             _player->GetName().c_str(), _player->GetGUID().GetCounter(), guid.ToString().c_str());
     
     return authorized;
